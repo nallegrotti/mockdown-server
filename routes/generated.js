@@ -7,24 +7,29 @@ let express = require('express'),
 let currentExample = null;
 let examples = 0;
 
-fs.createReadStream('config/definition.md')
-	.pipe(split())
-	.on('data', function(line){
-		let example = line.match(/^#### \[(.*)\] (.*)/)
-		if (example){
-			if (examples++){
-				currentExample.registerRoute(router)
-			}
-			currentExample = new mocks.ExampleReader(example)
-		}else if (currentExample){
-			currentExample.processLine(line)
-		}
+fs.readdir('config', function(e, files){
+	files.forEach(function(filename){
+
+		fs.createReadStream('config/' + filename)
+			.pipe(split())
+			.on('data', function(line){
+				let example = line.match(/^#### \[(.*)\] (.*)/)
+				if (example){
+					if (examples++){
+						currentExample.registerRoute(router)
+					}
+					currentExample = new mocks.ExampleReader(example)
+				}else if (currentExample){
+					currentExample.processLine(line)
+				}
+			})
+			.on('end', function(){
+				if (currentExample){
+					currentExample.registerRoute(router)
+				}
+			})
 	})
-	.on('end', function(){
-		if (currentExample){
-			currentExample.registerRoute(router)
-		}
-	})
+})
 
 router['get']('/test', mocks.defaultResponse)
 /* GET home page. */
