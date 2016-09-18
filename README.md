@@ -8,3 +8,10 @@ copy a markdown file with the API definition in config/definition.md
 
 Start the server with
 	> npm start
+	
+## How to use it as a container
+
+1- Get your configuration files from anywhere you got them.
+2- Start a container from nallegrotti/mockdown-server image:
+	
+	> docker run -v "your_files_folder:/usr/src/app/config" -p 80:3000 -d nallegrotti/mockdown-server
