@@ -26,16 +26,22 @@ class ExampleReader {
 
 	waitForIt(line){
 		let responseStartLine = line.match(/> response: ```/)
+		let bodyStartLine = line.match(/< body: ```/)
 		if (responseStartLine){
-			console.info('Body capture started', line)
+			console.info('Response Body capture started', line)
 			this.capture = this.captureResponse
 			this.bodyTxt = ''
+		}
+		if (bodyStartLine){
+			console.info('Body capture started', line)
+			this.capture = this.captureBodyParameter
+			this.bodyParamTxt = ''
 		}
 	}
 
 	captureResponse(line){
 		if (line.match(/```/)){
-			console.info('Body capture ended', line, this.bodyTxt)
+			console.info('Response body capture ended', line, this.bodyTxt)
 			this.capture = () => {}
 			this.body = JSON.parse(this.bodyTxt)
 		} else {
@@ -43,13 +49,28 @@ class ExampleReader {
 		}
 	}
 
-	response(req, res){
-		res.status(this.status||200).json(this.body)
+	captureBodyParameter(line){
+		if (line.match(/```/)){
+			console.info('Body capture ended', line, this.bodyParamTxt)
+			this.capture = this.waitForIt
+			this.bodyKey = JSON.stringify(JSON.parse(this.bodyParamTxt))
+		} else {
+			this.bodyParamTxt += line
+		}
+	}
+
+	response(req, res, next){
+		console.log("Body=", req.body)
+		console.log("ParamBody=", this.bodyKey)
+		if (JSON.stringify(req.body) == this.bodyKey){
+			res.status(this.status||200).json(this.body)
+		}
+		next()
 	}
 
 	registerRoute(router){
 		console.info('registering', this)
-		router[this.verb](this.url, (req, res) => this.response(req, res))
+		router[this.verb](this.url, (req, res, next) => this.response(req, res, next)) 
 	}
 }
 self.ExampleReader = ExampleReader
