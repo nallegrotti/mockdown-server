@@ -74,8 +74,9 @@ class ExampleReader {
 			res.status(this.responses[this.index].status||200)
 				.json(this.responses[this.index].body)
 			if(this.index < this.responses.length - 1) this.index ++; 
+		}else{
+			next()
 		}
-		next()
 	}
 
 	registerRoute(router){
