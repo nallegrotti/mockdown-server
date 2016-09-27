@@ -12,7 +12,9 @@ class ExampleReader {
 		this.verb = definition[1].toLowerCase()
 		this.url = definition[2]
 		this.capture = this.waitForIt
-		this.body = { mock: 'mocked'}
+		this.status = []
+		this.responses = []
+		this.index = 0
 	}
 
 	processLine(line){
@@ -42,8 +44,12 @@ class ExampleReader {
 	captureResponse(line){
 		if (line.match(/```/)){
 			console.info('Response body capture ended', line, this.bodyTxt)
-			this.capture = () => {}
-			this.body = JSON.parse(this.bodyTxt)
+			this.capture = this.waitForIt
+			// this.capture = () => {}
+			this.responses[this.index ++] = {
+				status: this.status,
+				body: JSON.parse(this.bodyTxt)
+			}
 		} else {
 			this.bodyTxt += line
 		}
@@ -62,14 +68,19 @@ class ExampleReader {
 	response(req, res, next){
 		console.log("Body=", req.body)
 		console.log("ParamBody=", this.bodyKey)
-		if (JSON.stringify(req.body) == this.bodyKey){
-			res.status(this.status||200).json(this.body)
+		console.log("index=", this.index)
+		console.log("responses=", this.responses)
+		if (JSON.stringify(req.body) == this.bodyKey || !this.bodyKey){
+			res.status(this.responses[this.index].status||200)
+				.json(this.responses[this.index].body)
+			if(this.index < this.responses.length - 1) this.index ++; 
 		}
 		next()
 	}
 
 	registerRoute(router){
 		console.info('registering', this)
+		this.index = 0
 		router[this.verb](this.url, (req, res, next) => this.response(req, res, next)) 
 	}
 }
